@@ -511,18 +511,40 @@ class rtti_parser(object):
                         
         # may be this is a bug on IDA.
         # ida fails to apply a structure type to bytes under some conditions, although create_struct returns True.
-        # to avoid that, apply them again.
+        # to avoid that, apply them again. Cache xref targets per tid to avoid repeated calls.
         ida_auto.auto_wait()
-        #print(len([xrea for xrea in u.get_refs_to(RTTICompleteObjectLocator.tid)]), len([result[x].ea for x in result]))
-        if len([xrea for xrea in u.get_refs_to(RTTICompleteObjectLocator.tid)]) != len([result[x].ea for x in result]):
-            [ida_bytes.create_struct(result[x].ea, RTTICompleteObjectLocator.size, RTTICompleteObjectLocator.tid, True) for x in result]
-        #print(len([xrea for xrea in u.get_refs_to(RTTIClassHierarchyDescriptor.tid)]), len(set([result[x].chd.ea for x in result])))
-        if len([xrea for xrea in u.get_refs_to(RTTIClassHierarchyDescriptor.tid)]) != len(set([result[x].chd.ea for x in result])):
-            [ida_bytes.create_struct(result[x].chd.ea, RTTIClassHierarchyDescriptor.size, RTTIClassHierarchyDescriptor.tid, True) for x in result]
-        #print(len([xrea for xrea in u.get_refs_to(RTTITypeDescriptor.tid)]), len(set([result[x].td.ea for x in result])))
-        if len([xrea for xrea in u.get_refs_to(RTTITypeDescriptor.tid)]) != len(set([result[x].td.ea for x in result])):
-            [ida_bytes.create_struct(result[x].td.ea, result[x].td.size, RTTITypeDescriptor.tid, True) for x in result]
-            
+
+        # helper: get xref set for a tid (cache)
+        def get_xref_set(tid):
+            return set(u.get_refs_to(tid))
+
+        # build caches of expected addresses
+        found_col_eas = [result[x].ea for x in result]
+        found_chd_eas = set([result[x].chd.ea for x in result])
+        found_td_eas = set([result[x].td.ea for x in result])
+
+        # apply structs only to addresses missing from IDA's xref results
+        col_xrefs = get_xref_set(RTTICompleteObjectLocator.tid)
+        if len(col_xrefs) != len(found_col_eas):
+            for ea in found_col_eas:
+                if ea not in col_xrefs:
+                    ida_bytes.create_struct(ea, RTTICompleteObjectLocator.size, RTTICompleteObjectLocator.tid, True)
+
+        chd_xrefs = get_xref_set(RTTIClassHierarchyDescriptor.tid)
+        if len(chd_xrefs) != len(found_chd_eas):
+            for ea in found_chd_eas:
+                if ea not in chd_xrefs:
+                    ida_bytes.create_struct(ea, RTTIClassHierarchyDescriptor.size, RTTIClassHierarchyDescriptor.tid, True)
+
+        td_xrefs = get_xref_set(RTTITypeDescriptor.tid)
+        if len(td_xrefs) != len(found_td_eas):
+            for ea in found_td_eas:
+                if ea not in td_xrefs:
+                    # find corresponding td size from result mapping
+                    # result[x].td.size may be different; safe fallback to RTTITypeDescriptor.size
+                    td_size = next((result[x].td.size for x in result if result[x].td.ea == ea), RTTITypeDescriptor.size)
+                    ida_bytes.create_struct(ea, td_size, RTTITypeDescriptor.tid, True)
+
         # for refreshing xrefs to get xrefs from COLs to TDs
         ida_auto.auto_wait()
         
