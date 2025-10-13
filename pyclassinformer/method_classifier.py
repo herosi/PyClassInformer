@@ -207,12 +207,11 @@ def add_vfunc_index_comments(paths, data):
         if not path:
             continue
         
-       # class_name = path[-1].name
         vfunc_eas = data[vftable_ea].vfeas
         
         for index, vfea in enumerate(vfunc_eas):
             entry_ea = vftable_ea + (index * u.PTR_SIZE)
-            comment = format(index + 1)
+            comment = format(index)
             ida_bytes.set_cmt(entry_ea, comment, 0)
 
 
@@ -273,3 +272,4 @@ def method_classifier(data, config=None, icon=-1):
         print("Warning; Your IDA does not have ida_dirtree or find_entry in dirtree_t. Skip creating dirs for classes and moving functions into them.")
     
     return tree
+
