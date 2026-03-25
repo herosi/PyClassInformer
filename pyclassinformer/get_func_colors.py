@@ -8,6 +8,13 @@ ida_idaapi.require("pyclassinformer.qtutils")
 
 def get_chooser_data(chooser="Functions"):
     cri = ida_kernwin.chooser_row_info_vec_t()
+    ida_kernwin.get_chooser_rows(cri, "Functions", 0)
+    if cri.size() == 0:
+        # for IDA 9.3
+        # The version might have a bug and it crashes when calling
+        # get_chooser_rows with GCRF_ALL
+        # To avotid that, return None if the first line returns empty.
+        return None
     ida_kernwin.get_chooser_rows(cri, chooser, ida_kernwin.GCRF_ALL)
     return cri
 
