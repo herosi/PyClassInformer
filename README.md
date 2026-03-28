@@ -19,8 +19,8 @@ See the URL if you don't know about "$IDAUSR".
 [https://www.hex-rays.com/products/ida/support/idadoc/1375.shtml](https://www.hex-rays.com/products/ida/support/idadoc/1375.shtml)
 
 ## Requirements
-- IDA Pro 7.4 or later (I tested on 7.4 SP1 to 9.1)
-- Python 3.x (I tested on Python 3.8 and 3.10)
+- IDA Pro 7.4 or later (I tested on 7.4 SP1 to 9.3)
+- Python 3.x (I tested on Python 3.8, 3.10 and 3.12)
 
 You will need at least IDA Pro 7.4 or later because of the APIs that I use. If you want to use full features, use IDA 8.3 or later. Otherwise, some features will be limited to use or skipped.
 
