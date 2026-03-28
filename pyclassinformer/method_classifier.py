@@ -1,7 +1,10 @@
 import ida_idaapi
 import ida_funcs
 import ida_name
+import ida_bytes
 import idautils
+
+import pyclassinformer
 
 try:
     ModuleNotFoundError
@@ -25,6 +28,17 @@ ida_idaapi.require("pyclassinformer.pci_config")
 if tree_categorize:
     ida_idaapi.require("pyclassinformer.mc_tree")
     ida_idaapi.require("pyclassinformer.dirtree_utils")
+
+# lazy utils accessor to avoid construction when not available in tests
+_u = None
+def get_utils():
+    global _u
+    if _u is None:
+        try:
+            _u = pyclassinformer.pci_utils.utils()
+        except Exception:
+            _u = None
+    return _u
 
 def change_dir_of_ctors_dtors(paths, data, dirtree):
     path_prefix = "/classes/"
@@ -186,6 +200,21 @@ def rename_vfuncs(paths, data):
         rename_funcs(vfunc_eas, class_name.split("<")[0] + "::", is_lib=is_lib)
 
 
+def add_vfunc_index_comments(paths, data):
+    u = pyclassinformer.pci_utils.utils()
+    for vftable_ea in paths:
+        path = paths[vftable_ea]
+        if not path:
+            continue
+        
+        vfunc_eas = data[vftable_ea].vfeas
+        
+        for index, vfea in enumerate(vfunc_eas):
+            entry_ea = vftable_ea + (index * u.PTR_SIZE)
+            comment = format(index)
+            ida_bytes.set_cmt(entry_ea, comment, 0)
+
+
 def get_base_classes(data):
     paths = {}
     for vftable_ea in data:
@@ -208,7 +237,7 @@ def method_classifier(data, config=None, icon=-1):
         config = pyclassinformer.pci_config.pci_confg()
         
     # check config values to execute or not
-    if not config.exana and not config.mvvm and not config.mvcd and not config.rnvm and not config.rncd:
+    if not config.exana and not config.mvvm and not config.mvcd and not config.rnvm and not config.rncd and not config.rnvi:
         return None
     
     # get base classes
@@ -221,6 +250,10 @@ def method_classifier(data, config=None, icon=-1):
     # rename functions that refer to vftables because they are constructors or destructors
     if config.rncd:
        rename_vftable_ref_funcs(paths, data)
+    
+    # add virtual function index comments
+    if config.rnvi:
+        add_vfunc_index_comments(paths, data)
         
     tree = None
     if tree_categorize:
@@ -239,3 +272,4 @@ def method_classifier(data, config=None, icon=-1):
         print("Warning; Your IDA does not have ida_dirtree or find_entry in dirtree_t. Skip creating dirs for classes and moving functions into them.")
     
     return tree
+
