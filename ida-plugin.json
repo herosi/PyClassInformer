@@ -2,6 +2,16 @@
   "IDAMetadataDescriptorVersion": 1,
   "plugin": {
     "name": "PyClassInformer",
-    "entryPoint": "pyclassinformer_plugin.py"
+    "entryPoint": "pyclassinformer_plugin.py",
+    "version": "1.0.0",
+    "urls": {
+      "repository": "https://github.com/herosi/PyClassInformer"
+    },
+    "authors": [
+      {
+        "name": "Hiroshi Suzuki",
+        "email": "20717881+herosi@users.noreply.github.com"
+      }
+    ]
   }
 }
